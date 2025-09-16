@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import '../../../../core/widgets/async_body.dart';
+import '../../../../core/widgets/pet_card.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../controllers/pets_list_controller.dart';
 import '../../data/pet_models.dart';
 import '../widgets/new_pet_dialog.dart';
@@ -14,74 +16,184 @@ class PetsListPage extends ConsumerWidget {
     final petsListController = ref.read(petsListControllerProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pets'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: DropdownButton<String>(
-              value: petsListController.currentStatus,
-              underline: Container(),
-              dropdownColor: Theme.of(context).appBarTheme.backgroundColor,
-              style: TextStyle(
-                color: Theme.of(context).appBarTheme.foregroundColor,
+      body: CustomScrollView(
+        slivers: [
+          // Big header section
+          SliverAppBar(
+            expandedHeight: 200,
+            floating: false,
+            pinned: true,
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            elevation: 0,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppTheme.primaryColor.withValues(alpha: 0.05),
+                      AppTheme.primaryColor.withValues(alpha: 0.1),
+                    ],
+                  ),
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.spacingL,
+                      vertical: AppTheme.spacingXL,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Pet Store',
+                          style: Theme.of(context).textTheme.headlineLarge
+                              ?.copyWith(color: AppTheme.primaryColor),
+                        ),
+                        const SizedBox(height: AppTheme.spacingS),
+                        Text(
+                          'Find your perfect companion',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(color: AppTheme.secondaryColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              items: const [
-                DropdownMenuItem(value: 'available', child: Text('Available')),
-                DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                DropdownMenuItem(value: 'sold', child: Text('Sold')),
-              ],
-              onChanged: (status) {
-                if (status != null) {
-                  petsListController.setStatus(status);
-                }
-              },
+            ),
+            // Filter in app bar when collapsed
+            actions: [
+              Container(
+                margin: const EdgeInsets.only(right: AppTheme.spacingM),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.spacingM,
+                  vertical: AppTheme.spacingS,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: DropdownButton<String>(
+                  value: petsListController.currentStatus,
+                  underline: Container(),
+                  icon: const Icon(Icons.tune, size: 18),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'available',
+                      child: Text('Available'),
+                    ),
+                    DropdownMenuItem(value: 'pending', child: Text('Pending')),
+                    DropdownMenuItem(value: 'sold', child: Text('Sold')),
+                  ],
+                  onChanged: (status) {
+                    if (status != null) {
+                      petsListController.setStatus(status);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+          // Content section as SliverToBoxAdapter
+          SliverToBoxAdapter(
+            child: AsyncBody<List<Pet>>(
+              value: petsListState,
+              loadingWidget: Container(
+                padding: const EdgeInsets.only(top: 40),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+              errorBuilder: (error) => Container(
+                height: 400,
+                padding: const EdgeInsets.all(AppTheme.spacingXL),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: AppTheme.errorColor.withValues(alpha: 0.6),
+                    ),
+                    const SizedBox(height: AppTheme.spacingL),
+                    Text(
+                      'Something went wrong',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(color: AppTheme.errorColor),
+                    ),
+                    const SizedBox(height: AppTheme.spacingS),
+                    Text(
+                      error.toString(),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: AppTheme.spacingL),
+                    ElevatedButton.icon(
+                      onPressed: () => petsListController.refresh(),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Try Again'),
+                    ),
+                  ],
+                ),
+              ),
+              builder: (pets) => pets.isEmpty
+                  ? Container(
+                      height: 400,
+                      padding: const EdgeInsets.all(AppTheme.spacingXL),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.pets,
+                            size: 80,
+                            color: AppTheme.secondaryColor.withValues(
+                              alpha: 0.4,
+                            ),
+                          ),
+                          const SizedBox(height: AppTheme.spacingL),
+                          Text(
+                            'No pets available',
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(color: AppTheme.secondaryColor),
+                          ),
+                          const SizedBox(height: AppTheme.spacingS),
+                          Text(
+                            'Try changing the filter or add a new pet',
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(
+                                  color: AppTheme.secondaryColor.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    )
+                  : _PetsGrid(pets: pets),
             ),
           ),
         ],
       ),
-      body: petsListState.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(
-                'Error loading pets',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                error.toString(),
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => petsListController.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-        data: (pets) => pets.isEmpty
-            ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.pets, size: 64, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text('No pets found'),
-                  ],
-                ),
-              )
-            : _PetsGrid(pets: pets),
-      ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showNewPetDialog(context, ref),
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text('Add Pet'),
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 8,
       ),
     );
   }
@@ -110,125 +222,71 @@ class _PetsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
+        final crossAxisCount = constraints.maxWidth > 1200
+            ? 4
+            : constraints.maxWidth > 800
+            ? 3
+            : constraints.maxWidth > 500
+            ? 2
+            : 1;
 
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: 0.8,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-          ),
-          itemCount: pets.length,
-          itemBuilder: (context, index) {
-            final pet = pets[index];
-            return _PetCard(pet: pet);
-          },
-        );
-      },
-    );
-  }
-}
-
-class _PetCard extends StatelessWidget {
-  final Pet pet;
-
-  const _PetCard({required this.pet});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          if (pet.id != null) {
-            context.go('/pets/${pet.id}');
-          }
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              flex: 3,
-              child: Hero(tag: 'pet-image-${pet.id}', child: _buildPetImage()),
-            ),
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        return Container(
+          padding: const EdgeInsets.all(AppTheme.spacingL),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Section header
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppTheme.spacingL),
+                child: Row(
                   children: [
                     Text(
-                      pet.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      'Available Pets',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(width: AppTheme.spacingM),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                        horizontal: AppTheme.spacingM,
+                        vertical: AppTheme.spacingS,
                       ),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(pet.status),
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        pet.status.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                        '${pets.length} pets',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
+              // Grid
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  childAspectRatio: 0.8,
+                  crossAxisSpacing: AppTheme.spacingL,
+                  mainAxisSpacing: AppTheme.spacingL,
+                ),
+                itemCount: pets.length,
+                itemBuilder: (context, index) {
+                  final pet = pets[index];
+                  return PetCard(pet: pet);
+                },
+              ),
+              const SizedBox(height: AppTheme.spacingXL),
+            ],
+          ),
+        );
+      },
     );
-  }
-
-  Widget _buildPetImage() {
-    if (pet.photoUrls.isNotEmpty) {
-      return Image.network(
-        pet.photoUrls.first,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return _buildPlaceholder();
-        },
-      );
-    }
-    return _buildPlaceholder();
-  }
-
-  Widget _buildPlaceholder() {
-    return Container(
-      color: Colors.grey[300],
-      child: const Icon(Icons.pets, size: 48, color: Colors.grey),
-    );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'available':
-        return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'sold':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
   }
 }
