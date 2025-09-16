@@ -5,19 +5,23 @@ A clean, minimal Flutter web application for managing pets using the Swagger Pet
 ## Features
 
 - **Browse Pets**: View pets in a responsive grid layout with status filtering (Available, Pending, Sold)
-- **Create Pet**: Add new pets via modal dialog with form validation
+- **Create Pet**: Add new pets via modal dialog with form validation and random ID generation
 - **Edit Pet**: Update existing pets with prefilled modal forms
 - **Delete Pet**: Remove pets with confirmation dialog
 - **Hero Animations**: Smooth image transitions between list and detail views
-- **Responsive Design**: Optimized for both desktop and mobile layouts
+- **Responsive Design**: Dynamic grid layout (1-4 columns) optimized for all screen sizes
+- **Clean URLs**: Hash-free routing for better SEO and user experience
+- **Modern UI**: Bold typography, dynamic cards with gradients and shadows
+- **Smart Loading**: Custom loading states with proper spacing
 
 ## Architecture
 
 - **Clean Architecture**: Feature-based folder structure with separation of concerns
-- **State Management**: Riverpod for reactive state management
-- **Navigation**: go_router for type-safe routing
-- **HTTP Client**: Dio with custom error handling for API communication
-- **UI Components**: Reusable widgets with Material Design 3
+- **State Management**: Riverpod for reactive state management with AsyncNotifier pattern
+- **Navigation**: go_router for type-safe routing with clean URLs (no hash fragments)
+- **HTTP Client**: Dio with custom error handling for mixed response formats (JSON/plain text)
+- **UI Components**: Reusable widgets (AsyncBody, PetCard) with Material Design 3
+- **Theme System**: Comprehensive theme with typography scale and consistent spacing constants
 
 ## API Configuration
 
@@ -89,9 +93,10 @@ To record a complete demo of the application:
 ## Tech Stack
 
 - **Flutter Web** - Cross-platform UI framework
-- **go_router** ^14.0.0 - Declarative routing
+- **go_router** ^14.0.0 - Declarative routing with clean URLs
 - **flutter_riverpod** ^3.0.0 - State management
 - **dio** ^5.7.0 - HTTP client
+- **flutter_web_plugins** - Web-specific plugins (URL strategy)
 - **flutter_lints** ^4.0.0 - Code quality and linting
 
 ## Project Structure
@@ -99,15 +104,18 @@ To record a complete demo of the application:
 ```
 lib/
 ├── core/
-│   ├── networking/          # HTTP client configuration
-│   ├── routing/            # App routing configuration
-│   ├── theme/              # App theme and styling
-│   └── widgets/            # Reusable UI components
+│   ├── networking/          # HTTP client configuration (DioClient)
+│   ├── theme/              # App theme and typography
+│   └── widgets/            # Reusable UI components (AsyncBody, PetCard)
 ├── features/
 │   └── pets/
-│       ├── data/           # Models and API layer
+│       ├── data/           # Models (Pet, Category, Tag) and API layer
 │       └── presentation/   # Controllers, pages, and widgets
-└── main.dart              # App entry point
+│           ├── controllers/ # Riverpod controllers for state management
+│           ├── pages/      # Main pages (PetsListPage, PetDetailPage)
+│           └── widgets/    # Feature-specific widgets (dialogs)
+├── routing/                # App routing configuration (GoRouter)
+└── main.dart              # App entry point with URL strategy
 ```
 
 ## Key Technologies
@@ -120,11 +128,15 @@ lib/
 
 ## Development Notes
 
-- All CRUD operations include proper error handling and user feedback
-- Forms include validation for required fields
-- Images gracefully fallback to placeholders when URLs fail
-- State is automatically refreshed after mutations
-- Responsive design adapts to different screen sizes
+- **CRUD Operations**: All operations include proper error handling and SnackBar user feedback
+- **Form Validation**: Required field validation with consistent styling
+- **Image Handling**: Graceful fallback to centered placeholders when URLs fail
+- **State Management**: Automatic refresh after mutations with proper loading states
+- **Responsive Design**: Dynamic grid layout adapts to screen sizes (mobile to desktop)
+- **Error Handling**: Custom error handling for API quirks (plain text vs JSON responses)
+- **URL Strategy**: Clean URLs without hash fragments for better web experience
+- **Typography**: Bold, modern typography with proper hierarchy and spacing
+- **Visual Polish**: Cards with shadows, gradients, and smooth animations
 
 ## Testing
 
