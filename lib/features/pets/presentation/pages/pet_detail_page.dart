@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/widgets/async_body.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../controllers/pet_detail_controller.dart';
 import '../controllers/pets_list_controller.dart';
 import '../../data/pet_models.dart';
@@ -36,35 +38,70 @@ class _PetDetailPageState extends ConsumerState<PetDetailPage> {
     final petState = ref.watch(petDetailControllerProvider);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text('Pet Detail - ${widget.petId}'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            ref.read(petsListControllerProvider.notifier).refresh();
-            context.go('/');
-          },
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Container(
+          margin: const EdgeInsets.all(AppTheme.spacingS),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppTheme.primaryColor),
+            onPressed: () {
+              ref.read(petsListControllerProvider.notifier).refresh();
+              context.go('/');
+            },
+          ),
         ),
         actions: petState.when(
           data: (pet) => pet != null ? [
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => _showEditDialog(context, pet),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () => _showDeleteDialog(context, pet),
+            Container(
+              margin: const EdgeInsets.all(AppTheme.spacingS),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: () => _showEditDialog(context, pet),
+                    icon: const Icon(Icons.edit, size: 20, color: AppTheme.primaryColor),
+                    tooltip: 'Edit Pet',
+                  ),
+                  IconButton(
+                    onPressed: () => _showDeleteDialog(context, pet),
+                    icon: const Icon(Icons.delete, size: 20, color: AppTheme.errorColor),
+                    tooltip: 'Delete Pet',
+                  ),
+                ],
+              ),
             ),
           ] : null,
           loading: () => null,
           error: (_, __) => null,
         ),
       ),
-      body: petState.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
-        error: (error, _) => Center(
+      body: AsyncBody<Pet?>(
+        value: petState,
+        errorBuilder: (error) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -93,7 +130,7 @@ class _PetDetailPageState extends ConsumerState<PetDetailPage> {
             ],
           ),
         ),
-        data: (pet) {
+        builder: (pet) {
           if (pet == null) {
             return _NotFoundContent();
           }
@@ -176,108 +213,307 @@ class _PetDetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Hero(
-            tag: 'pet-image-${pet.id}',
-            child: _buildPetImage(),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            pet.name,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              color: _getStatusColor(pet.status),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              pet.status.toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+          // Hero image section with overlay
+          Stack(
+            children: [
+              Hero(
+                tag: 'pet-image-${pet.id}',
+                child: _buildPetImage(),
               ),
-            ),
-          ),
-          if (pet.category != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Category',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(pet.category!.name),
-          ],
-          if (pet.tags != null && pet.tags!.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Tags',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: pet.tags!.map((tag) {
-                return Chip(
-                  label: Text(tag.name),
-                  backgroundColor: Colors.grey[200],
-                );
-              }).toList(),
-            ),
-          ],
-          if (pet.photoUrls.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Photo URLs',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: pet.photoUrls.map((url) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    url,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.blue,
-                      decoration: TextDecoration.underline,
+              // Gradient overlay
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 120,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.7),
+                      ],
                     ),
                   ),
-                );
-              }).toList(),
+                ),
+              ),
+              // Status badge on image
+              Positioned(
+                bottom: AppTheme.spacingL,
+                right: AppTheme.spacingL,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacingL,
+                    vertical: AppTheme.spacingM,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.getStatusColor(pet.status),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    pet.status.toUpperCase(),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          // Content section with better layout
+          Transform.translate(
+            offset: const Offset(0, -20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(AppTheme.spacingXL),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Pet name with bigger typography
+                    Text(
+                      pet.name,
+                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: AppTheme.spacingS),
+                    Text(
+                      'Meet your new companion',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppTheme.secondaryColor,
+                      ),
+                    ),
+                
+                    const SizedBox(height: AppTheme.spacingXL),
+                    
+                    // Info cards section
+                    Row(
+                      children: [
+                        // Category card
+                        if (pet.category != null)
+                          Expanded(
+                            child: _buildInfoCard(
+                              context: context,
+                              icon: Icons.category,
+                              title: 'Category',
+                              value: pet.category!.name,
+                              color: AppTheme.primaryColor,
+                            ),
+                          ),
+                        if (pet.category != null && (pet.tags != null && pet.tags!.isNotEmpty))
+                          const SizedBox(width: AppTheme.spacingM),
+                        // Tags count card  
+                        if (pet.tags != null && pet.tags!.isNotEmpty)
+                          Expanded(
+                            child: _buildInfoCard(
+                              context: context,
+                              icon: Icons.label,
+                              title: 'Tags',
+                              value: '${pet.tags!.length} tags',
+                              color: AppTheme.successColor,
+                            ),
+                          ),
+                      ],
+                    ),
+                    
+                    if (pet.tags != null && pet.tags!.isNotEmpty) ...[
+                      const SizedBox(height: AppTheme.spacingL),
+                      _buildSection(
+                        context: context,
+                        title: 'Personality Tags',
+                        child: Wrap(
+                          spacing: AppTheme.spacingM,
+                          runSpacing: AppTheme.spacingM,
+                          children: pet.tags!.map((tag) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppTheme.spacingL,
+                                vertical: AppTheme.spacingM,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppTheme.primaryColor.withValues(alpha: 0.1),
+                                    AppTheme.primaryColor.withValues(alpha: 0.05),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.star,
+                                    size: 16,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                  const SizedBox(width: AppTheme.spacingS),
+                                  Text(
+                                    tag.name,
+                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: AppTheme.primaryColor,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
+                    
+                    // Photo URLs section
+                    if (pet.photoUrls.length >= 2) ...[
+                      const SizedBox(height: AppTheme.spacingL),
+                      _buildSection(
+                        context: context,
+                        title: 'Additional Photos',
+                        child: SizedBox(
+                          height: 100,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: pet.photoUrls.length - 1,
+                            itemBuilder: (context, index) {
+                              final url = pet.photoUrls[index + 1]; // Skip first image (hero)
+                              return Container(
+                                width: 100,
+                                margin: const EdgeInsets.only(right: AppTheme.spacingS),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    url,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        _buildPlaceholder(size: 100),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildInfoCard({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spacingL),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppTheme.spacingS),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacingM),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppTheme.secondaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacingXS),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
   }
 
+  Widget _buildSection({
+    required BuildContext context,
+    required String title,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacingM),
+        child,
+      ],
+    );
+  }
+
   Widget _buildPetImage() {
     if (pet.photoUrls.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+      return AspectRatio(
+        aspectRatio: 16 / 9,
         child: Image.network(
           pet.photoUrls.first,
           width: double.infinity,
-          height: 250,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
           loadingBuilder: (context, child, loadingProgress) {
@@ -290,32 +526,18 @@ class _PetDetailContent extends StatelessWidget {
     return _buildPlaceholder();
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder({double? size}) {
     return Container(
       width: double.infinity,
-      height: 250,
-      decoration: BoxDecoration(
-        color: Colors.grey[300],
-        borderRadius: BorderRadius.circular(8),
+      height: size ?? 250,
+      decoration: const BoxDecoration(
+        color: Color(0xFFF3F4F6),
       ),
-      child: const Icon(
+      child: Icon(
         Icons.pets,
-        size: 64,
-        color: Colors.grey,
+        size: size != null ? size * 0.4 : 64,
+        color: AppTheme.secondaryColor.withValues(alpha: 0.6),
       ),
     );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'available':
-        return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'sold':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
   }
 }

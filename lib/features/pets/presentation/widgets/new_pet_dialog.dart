@@ -66,10 +66,29 @@ class _NewPetDialogState extends ConsumerState<NewPetDialog> {
                   labelText: 'Status',
                   border: OutlineInputBorder(),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'available', child: Text('Available')),
-                  DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                  DropdownMenuItem(value: 'sold', child: Text('Sold')),
+                style: Theme.of(context).textTheme.bodyMedium,
+                items: [
+                  DropdownMenuItem(
+                    value: 'available',
+                    child: Text(
+                      'Available',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'pending',
+                    child: Text(
+                      'Pending',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'sold',
+                    child: Text(
+                      'Sold',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
                 ],
                 onChanged: (value) {
                   if (value != null) {
