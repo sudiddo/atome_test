@@ -1,16 +1,34 @@
-# atome_test
+# Flutter Petstore Web
 
-A new Flutter project.
+A Flutter web application for the Petstore API, built with clean architecture and modern Flutter patterns.
 
-## Getting Started
+## Project Goal
 
-This project is a starting point for a Flutter application.
+This project aims to create a minimal, readable Flutter web application that interacts with the Petstore API. It demonstrates:
 
-A few resources to get you started if this is your first Flutter project:
+- Clean architecture with feature-based folder structure
+- Modern routing using go_router
+- State management with Riverpod
+- HTTP client using Dio
+- Strict linting and code quality standards
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Tech Stack
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- **Flutter Web** - Cross-platform UI framework
+- **go_router** ^14.0.0 - Declarative routing
+- **flutter_riverpod** ^3.0.0 - State management
+- **dio** ^5.7.0 - HTTP client
+- **flutter_lints** ^4.0.0 - Code quality and linting
+
+## How to Run
+
+To run the application in Chrome:
+
+```bash
+flutter run -d chrome
+```
+
+## Related Links
+
+- [Petstore UI](https://petstore3.swagger.io/)
+- [Petstore API Specification](https://petstore3.swagger.io/api/v3/openapi.json)
