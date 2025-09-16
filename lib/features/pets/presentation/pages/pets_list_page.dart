@@ -23,7 +23,9 @@ class PetsListPage extends ConsumerWidget {
               value: petsListController.currentStatus,
               underline: Container(),
               dropdownColor: Theme.of(context).appBarTheme.backgroundColor,
-              style: TextStyle(color: Theme.of(context).appBarTheme.foregroundColor),
+              style: TextStyle(
+                color: Theme.of(context).appBarTheme.foregroundColor,
+              ),
               items: const [
                 DropdownMenuItem(value: 'available', child: Text('Available')),
                 DropdownMenuItem(value: 'pending', child: Text('Pending')),
@@ -39,9 +41,7 @@ class PetsListPage extends ConsumerWidget {
         ],
       ),
       body: petsListState.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -111,7 +111,7 @@ class _PetsGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
-        
+
         return GridView.builder(
           padding: const EdgeInsets.all(16),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -151,10 +151,7 @@ class _PetCard extends StatelessWidget {
           children: [
             Expanded(
               flex: 3,
-              child: Hero(
-                tag: 'pet-image-${pet.id}',
-                child: _buildPetImage(),
-              ),
+              child: Hero(tag: 'pet-image-${pet.id}', child: _buildPetImage()),
             ),
             Expanded(
               flex: 2,
@@ -218,11 +215,7 @@ class _PetCard extends StatelessWidget {
   Widget _buildPlaceholder() {
     return Container(
       color: Colors.grey[300],
-      child: const Icon(
-        Icons.pets,
-        size: 48,
-        color: Colors.grey,
-      ),
+      child: const Icon(Icons.pets, size: 48, color: Colors.grey),
     );
   }
 

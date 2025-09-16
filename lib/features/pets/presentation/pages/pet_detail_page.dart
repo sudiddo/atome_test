@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../controllers/pet_detail_controller.dart';
+import '../controllers/pets_list_controller.dart';
 import '../../data/pet_models.dart';
+import '../widgets/edit_pet_dialog.dart';
+import '../widgets/delete_pet_dialog.dart';
 
 class PetDetailPage extends ConsumerStatefulWidget {
   final String petId;
@@ -37,7 +40,24 @@ class _PetDetailPageState extends ConsumerState<PetDetailPage> {
         title: Text('Pet Detail - ${widget.petId}'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
+          onPressed: () {
+            ref.read(petsListControllerProvider.notifier).refresh();
+            context.go('/');
+          },
+        ),
+        actions: petState.when(
+          data: (pet) => pet != null ? [
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => _showEditDialog(context, pet),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () => _showDeleteDialog(context, pet),
+            ),
+          ] : null,
+          loading: () => null,
+          error: (_, __) => null,
         ),
       ),
       body: petState.when(
@@ -75,12 +95,74 @@ class _PetDetailPageState extends ConsumerState<PetDetailPage> {
         ),
         data: (pet) {
           if (pet == null) {
-            return const Center(
-              child: Text('Pet not found'),
-            );
+            return _NotFoundContent();
           }
           return _PetDetailContent(pet: pet);
         },
+      ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context, Pet pet) {
+    showDialog(
+      context: context,
+      builder: (context) => EditPetDialog(
+        pet: pet,
+        onPetUpdated: () {
+          final id = int.tryParse(widget.petId);
+          if (id != null) {
+            ref.read(petDetailControllerProvider.notifier).load(id);
+          }
+          ref.read(petsListControllerProvider.notifier).refresh();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pet updated successfully!')),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, Pet pet) {
+    showDialog(
+      context: context,
+      builder: (context) => DeletePetDialog(
+        pet: pet,
+        onPetDeleted: () {
+          ref.read(petsListControllerProvider.notifier).refresh();
+          context.go('/');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pet deleted successfully!')),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _NotFoundContent extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.pets, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(
+            'Pet not found',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 8),
+          const Text('This pet might have been deleted or the ID is invalid.'),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              ref.read(petsListControllerProvider.notifier).refresh();
+              context.go('/');
+            },
+            child: const Text('Back to Home'),
+          ),
+        ],
       ),
     );
   }
@@ -154,6 +236,31 @@ class _PetDetailContent extends StatelessWidget {
                 return Chip(
                   label: Text(tag.name),
                   backgroundColor: Colors.grey[200],
+                );
+              }).toList(),
+            ),
+          ],
+          if (pet.photoUrls.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Photo URLs',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: pet.photoUrls.map((url) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    url,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.blue,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
                 );
               }).toList(),
             ),

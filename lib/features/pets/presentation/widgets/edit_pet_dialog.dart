@@ -1,29 +1,46 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/pet_detail_controller.dart';
 import '../../data/pet_models.dart';
 
-class NewPetDialog extends ConsumerStatefulWidget {
-  final VoidCallback onPetCreated;
+class EditPetDialog extends ConsumerStatefulWidget {
+  final Pet pet;
+  final VoidCallback onPetUpdated;
 
-  const NewPetDialog({
+  const EditPetDialog({
     super.key,
-    required this.onPetCreated,
+    required this.pet,
+    required this.onPetUpdated,
   });
 
   @override
-  ConsumerState<NewPetDialog> createState() => _NewPetDialogState();
+  ConsumerState<EditPetDialog> createState() => _EditPetDialogState();
 }
 
-class _NewPetDialogState extends ConsumerState<NewPetDialog> {
+class _EditPetDialogState extends ConsumerState<EditPetDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _photoUrlsController = TextEditingController();
-  final _categoryNameController = TextEditingController();
-  final _tagsController = TextEditingController();
-  String _selectedStatus = 'available';
+  late final TextEditingController _nameController;
+  late final TextEditingController _photoUrlsController;
+  late final TextEditingController _categoryNameController;
+  late final TextEditingController _tagsController;
+  late String _selectedStatus;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.pet.name);
+    _photoUrlsController = TextEditingController(
+      text: widget.pet.photoUrls.join(', '),
+    );
+    _categoryNameController = TextEditingController(
+      text: widget.pet.category?.name ?? '',
+    );
+    _tagsController = TextEditingController(
+      text: widget.pet.tags?.map((tag) => tag.name).join(', ') ?? '',
+    );
+    _selectedStatus = widget.pet.status;
+  }
 
   @override
   void dispose() {
@@ -37,7 +54,7 @@ class _NewPetDialogState extends ConsumerState<NewPetDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Create New Pet'),
+      title: const Text('Edit Pet'),
       content: SizedBox(
         width: 400,
         child: Form(
@@ -105,7 +122,6 @@ class _NewPetDialogState extends ConsumerState<NewPetDialog> {
                   labelText: 'Photo URLs (comma-separated)',
                   border: OutlineInputBorder(),
                   hintText: 'https://example.com/photo1.jpg, https://example.com/photo2.jpg',
-                  helperText: 'Leave empty to use placeholder image',
                 ),
                 maxLines: 3,
               ),
@@ -119,20 +135,20 @@ class _NewPetDialogState extends ConsumerState<NewPetDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: _isLoading ? null : _createPet,
+          onPressed: _isLoading ? null : _updatePet,
           child: _isLoading
               ? const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Create'),
+              : const Text('Update'),
         ),
       ],
     );
   }
 
-  Future<void> _createPet() async {
+  Future<void> _updatePet() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -140,23 +156,18 @@ class _NewPetDialogState extends ConsumerState<NewPetDialog> {
     });
 
     try {
-      // Parse photo URLs - ensure at least one URL exists
-      final photoUrlsInput = _photoUrlsController.text.trim();
-      final photoUrls = photoUrlsInput.isNotEmpty
-          ? photoUrlsInput
-              .split(',')
-              .map((url) => url.trim())
-              .where((url) => url.isNotEmpty)
-              .toList()
-          : ['https://via.placeholder.com/300']; // Default placeholder if no URLs provided
+      final photoUrls = _photoUrlsController.text
+          .split(',')
+          .map((url) => url.trim())
+          .where((url) => url.isNotEmpty)
+          .toList();
 
       // Parse category
       Category? category;
       final categoryName = _categoryNameController.text.trim();
       if (categoryName.isNotEmpty) {
-        final random = Random();
         category = Category(
-          id: random.nextInt(10000), // Random category ID
+          id: widget.pet.category?.id, // Keep existing ID if available
           name: categoryName,
         );
       }
@@ -171,16 +182,19 @@ class _NewPetDialogState extends ConsumerState<NewPetDialog> {
             .where((tag) => tag.isNotEmpty)
             .toList();
         
-        final random = Random();
-        tags = tagNames.map((name) => Tag(
-          id: random.nextInt(10000), // Random tag ID
-          name: name,
-        )).toList();
+        tags = tagNames.asMap().entries.map((entry) {
+          final index = entry.key;
+          final name = entry.value;
+          return Tag(
+            id: widget.pet.tags != null && index < widget.pet.tags!.length
+                ? widget.pet.tags![index].id
+                : index,
+            name: name,
+          );
+        }).toList();
       }
 
-      final random = Random();
-      final pet = Pet(
-        id: random.nextInt(100000), // Random pet ID
+      final updatedPet = widget.pet.copyWith(
         name: _nameController.text.trim(),
         status: _selectedStatus,
         photoUrls: photoUrls,
@@ -189,11 +203,11 @@ class _NewPetDialogState extends ConsumerState<NewPetDialog> {
       );
 
       final controller = ref.read(petDetailControllerProvider.notifier);
-      await controller.create(pet);
+      await controller.updatePet(updatedPet);
 
       if (mounted) {
         Navigator.of(context).pop();
-        widget.onPetCreated();
+        widget.onPetUpdated();
       }
     } catch (e) {
       if (mounted) {
@@ -203,7 +217,7 @@ class _NewPetDialogState extends ConsumerState<NewPetDialog> {
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create pet: ${e.toString()}'),
+            content: Text('Failed to update pet: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );

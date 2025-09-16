@@ -10,10 +10,18 @@ class PetDetailController extends AsyncNotifier<Pet?> {
 
   Future<void> load(int id) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    try {
       final repository = ref.read(petsRepositoryProvider);
-      return await repository.getPetById(id);
-    });
+      final pet = await repository.getPetById(id);
+      state = AsyncValue.data(pet);
+    } catch (e) {
+      // Handle "Pet not found" and other API errors
+      if (e.toString().contains('Pet not found')) {
+        state = const AsyncValue.data(null);
+      } else {
+        state = AsyncValue.error(e, StackTrace.current);
+      }
+    }
   }
 
   Future<Pet?> create(Pet pet) async {
